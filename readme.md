@@ -4,38 +4,22 @@ A minimal YouTube video & MP3 downloader. Built with Node.js + Express + yt-dlp.
 
 ## Requirements
 
-- Node.js (v16+)
-- Python 3
-- yt-dlp
+- Node.js (v16+) — that's it. yt-dlp and ffmpeg are fetched automatically below.
 
 ## Setup
 
-### 1. Install yt-dlp
-
-**Linux / Mac:**
-```bash
-pip install yt-dlp
-```
-
-**Windows:**
-```bash
-pip install yt-dlp
-# or download yt-dlp.exe from https://github.com/yt-dlp/yt-dlp/releases
-```
-
-### 2. Install Node dependencies
-
 ```bash
 npm install
-```
-
-### 3. Run the server
-
-```bash
-node server.js
+npm run setup   # one-time: downloads yt-dlp + ffmpeg into ./bin
+npm start
 ```
 
 Then open **http://localhost:3000** in your browser.
+
+`npm run setup` downloads platform-appropriate yt-dlp and ffmpeg binaries into
+a local `./bin` folder — no manual downloads, no PATH edits. On macOS, if it
+can't find a static ffmpeg build it'll ask you to run `brew install ffmpeg`
+once; everything else is automatic on all platforms.
 
 ## Usage
 
@@ -47,21 +31,4 @@ Then open **http://localhost:3000** in your browser.
 ## Notes
 
 - Downloads are temporarily stored in `~/Downloads/yt-downloader/` and deleted after sending
-- For best results, keep yt-dlp updated: `pip install -U yt-dlp`
-- MP3 conversion requires ffmpeg: `sudo apt install ffmpeg` (Linux) or `brew install ffmpeg` (Mac)
-
-## ffmpeg (required for MP3 & merging high-quality video)
-
-**Linux:**
-```bash
-sudo apt install ffmpeg
-```
-
-**Mac:**
-```bash
-brew install ffmpeg
-```
-
-**Windows:**  
-Download from https://ffmpeg.org/download.html and add to PATH.
-# yt-fast
+- To update yt-dlp/ffmpeg later, delete the `bin/` folder and re-run `npm run setup`

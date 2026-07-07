@@ -11,9 +11,30 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── PATHS ───────────────────────────────────────────────────────────────────
-// Update these if yt-dlp or ffmpeg are in different locations
-const YTDLP   = 'C:\\ffmpeg\\bin\\yt-dlp.exe';
-const FFMPEG  = 'C:\\ffmpeg\\bin';
+// Looks for yt-dlp/ffmpeg in ./bin first (populated by `npm run setup`).
+// Falls back to whatever's on the system PATH if ./bin is empty, so this
+// still works for people who already have yt-dlp/ffmpeg installed globally.
+const BIN_DIR = path.join(__dirname, 'bin');
+const IS_WIN = process.platform === 'win32';
+
+function resolveBinary(localName, pathName) {
+  const local = path.join(BIN_DIR, localName);
+  return fs.existsSync(local) ? local : pathName; // pathName = bare command, resolved via PATH
+}
+
+const YTDLP = resolveBinary(IS_WIN ? 'yt-dlp.exe' : 'yt-dlp', 'yt-dlp');
+// --ffmpeg-location accepts a directory containing ffmpeg/ffprobe, or omit
+// it entirely to let yt-dlp search PATH on its own.
+const FFMPEG_DIR = fs.existsSync(path.join(BIN_DIR, IS_WIN ? 'ffmpeg.exe' : 'ffmpeg')) ? BIN_DIR : null;
+
+function ffmpegArgs() {
+  return FFMPEG_DIR ? ['--ffmpeg-location', FFMPEG_DIR] : [];
+}
+
+if (!fs.existsSync(BIN_DIR) || (YTDLP === 'yt-dlp' && !FFMPEG_DIR)) {
+  console.log('[SETUP] yt-dlp/ffmpeg not found in ./bin — run "npm run setup" to download them automatically,');
+  console.log('        or make sure yt-dlp/ffmpeg are installed and on your PATH.');
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DOWNLOAD_DIR = path.join(os.homedir(), 'Downloads', 'yt-downloader');
@@ -25,7 +46,7 @@ app.post('/api/info', (req, res) => {
   if (!url) return res.status(400).json({ error: 'URL is required' });
 
   const args = [
-    '--ffmpeg-location', FFMPEG,
+    ...ffmpegArgs(),
     '--dump-json',
     '--no-playlist',
     url
@@ -87,8 +108,8 @@ app.post('/api/download', (req, res) => {
   const tmpFile = path.join(DOWNLOAD_DIR, `download_${Date.now()}.%(ext)s`);
 
   const args = isAudio
-    ? ['--ffmpeg-location', FFMPEG, '-x', '--audio-format', 'mp3', '-o', tmpFile, '--no-playlist', url]
-    : ['--ffmpeg-location', FFMPEG, '-f', `${formatId}+bestaudio[ext=m4a]/best`, '--merge-output-format', 'mp4', '-o', tmpFile, '--no-playlist', url];
+    ? [...ffmpegArgs(), '-x', '--audio-format', 'mp3', '-o', tmpFile, '--no-playlist', url]
+    : [...ffmpegArgs(), '-f', `${formatId}+bestaudio[ext=m4a]/best`, '--merge-output-format', 'mp4', '-o', tmpFile, '--no-playlist', url];
 
   console.log('[DOWNLOAD] Running:', YTDLP, args.join(' '));
 
@@ -165,6 +186,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n YouTube Downloader running at http://localhost:${PORT}`);
   console.log(`   yt-dlp path : ${YTDLP}`);
-  console.log(`   ffmpeg path : ${FFMPEG}`);
+  console.log(`   ffmpeg dir  : ${FFMPEG_DIR || '(using system PATH)'}`);
   console.log(`   downloads   : ${DOWNLOAD_DIR}\n`);
 });
