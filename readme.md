@@ -8,9 +8,11 @@ A minimal YouTube video & MP3 downloader. Built with Node.js + Express + yt-dlp.
 
 ## Setup
 
+First install **node js** 
+
 ```bash
 npm install
-npm run setup   # one-time: downloads yt-dlp + ffmpeg into ./bin
+npm run setup   # first time only : downloads yt-dlp + ffmpeg into ./bin
 npm start
 ```
 
